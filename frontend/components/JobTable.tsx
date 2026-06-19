@@ -87,6 +87,7 @@ function ExpandedRow({
   job,
   onTailored,
   onUpdated,
+  onDeleted,
 }: {
   job: Job;
   onTailored: (
@@ -95,6 +96,7 @@ function ExpandedRow({
     cover_letter: string,
   ) => void;
   onUpdated: (job: Job) => void;
+  onDeleted: (id: string) => void;
 }) {
   const [tailoring, setTailoring] = useState(false);
   const [error, setError] = useState("");
@@ -237,6 +239,17 @@ function ExpandedRow({
                   : "✨ Tailor Resume"}
             </button>
             <EditJobModal job={job} onUpdated={onUpdated} />
+            <button
+              onClick={async () => {
+                if (!confirm(`Delete ${job.company_name} — ${job.job_title}?`))
+                  return;
+                await supabase.from("applications").delete().eq("id", job.id);
+                onDeleted(job.id);
+              }}
+              className="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              🗑️ Delete
+            </button>
           </div>
         </div>
       </td>
@@ -262,6 +275,11 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
 
   const handleUpdated = (updatedJob: Job) => {
     setJobs(jobs.map((j) => (j.id === updatedJob.id ? updatedJob : j)));
+  };
+
+  const handleDeleted = (id: string) => {
+    setJobs(jobs.filter((j) => j.id !== id));
+    setExpandedId(null);
   };
 
   const toggleRow = (id: string) => {
@@ -435,6 +453,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
                     job={job}
                     onTailored={handleTailored}
                     onUpdated={handleUpdated}
+                    onDeleted={handleDeleted}
                   />
                 )}
               </React.Fragment>
