@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import AddJobModal from "@/components/AddJobModal";
 import EditJobModal from "@/components/EditJobModal";
 import StatusSelect from "./StatusSelect";
+import ConfirmModal from "./ConfirmModal";
 
 const STATUS_OPTIONS = [
   { value: "Applied", label: "Applied", style: "bg-blue-500/20 text-blue-400" },
@@ -101,6 +102,7 @@ function ExpandedRow({
   const [tailoring, setTailoring] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"resume" | "cover">("resume");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleTailor = async () => {
     if (!job.job_desc) {
@@ -240,16 +242,24 @@ function ExpandedRow({
             </button>
             <EditJobModal job={job} onUpdated={onUpdated} />
             <button
-              onClick={async () => {
-                if (!confirm(`Delete ${job.company_name} — ${job.job_title}?`))
-                  return;
-                await supabase.from("applications").delete().eq("id", job.id);
-                onDeleted(job.id);
-              }}
+              onClick={() => setConfirmOpen(true)}
               className="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-lg transition-colors"
             >
               🗑️ Delete
             </button>
+
+            <ConfirmModal
+              open={confirmOpen}
+              title="Delete Application"
+              message={`Are you sure you want to delete ${job.company_name} — ${job.job_title}? This cannot be undone.`}
+              confirmLabel="Delete"
+              onCancel={() => setConfirmOpen(false)}
+              onConfirm={async () => {
+                await supabase.from("applications").delete().eq("id", job.id);
+                onDeleted(job.id);
+                setConfirmOpen(false);
+              }}
+            />
           </div>
         </div>
       </td>
