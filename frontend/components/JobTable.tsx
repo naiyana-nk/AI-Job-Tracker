@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from 'react'
 import { Job, ApplyStatus } from "@/lib/types";
 import AddJobModal from "@/components/AddJobModal";
 
@@ -64,6 +64,12 @@ function ExpandedRow({
     }
     setTailoring(true);
     setError("");
+    console.log("Sending to tailor:", {
+      job_id: job.id,
+      job_desc: job.job_desc,
+      job_title: job.job_title,
+      company_name: job.company_name,
+    });
     try {
       const res = await fetch("http://localhost:8000/tailor", {
         method: "POST",
@@ -260,7 +266,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
               </tr>
             )}
             {jobs.map((job, i) => (
-              <>
+              <React.Fragment key={job.id}>
                 <tr
                   key={job.id}
                   onClick={() => toggleRow(job.id)}
@@ -315,7 +321,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
                     onTailored={handleTailored}
                   />
                 )}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>

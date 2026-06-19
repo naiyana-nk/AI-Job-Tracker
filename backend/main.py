@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
-import PyPDF2
+import pdfplumber
 import io
 import os
 from dotenv import load_dotenv
@@ -62,10 +62,12 @@ Job Description:
 async def upload_resume(file: UploadFile = File(...)):
     try:
         contents = await file.read()
-        pdf_reader = PyPDF2.PdfReader(io.BytesIO(contents))
         text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text() + "\n"
+        with pdfplumber.open(io.BytesIO(contents)) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
 
         if not text.strip():
             return {"error": "Could not extract text from PDF. Make sure it's not a scanned image."}
