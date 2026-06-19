@@ -1,6 +1,8 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import datetime, timedelta
 import httpx
 import pdfplumber
 import io
@@ -11,6 +13,27 @@ from supabase import create_client
 load_dotenv()
 
 app = FastAPI()
+
+# Set up the scheduler for auto-ghosting
+scheduler = AsyncIOScheduler()
+
+@app.on_event("startup")
+async def start_scheduler():
+    scheduler.add_job(run_auto_ghost, 'interval', hours=24)
+    scheduler.start()
+
+async def run_auto_ghost():
+    try:
+        sb = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
+        cutoff = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        result = sb.table("applications")\
+            .update({ "apply_status": "Ghosted", "date_update": datetime.now().strftime('%Y-%m-%d') })\
+            .eq("apply_status", "Applied")\
+            .lt("date_apply", cutoff)\
+            .execute()
+        print(f"Auto-ghost ran: {len(result.data)} application(s) marked as Ghosted.")
+    except Exception as e:
+        print(f"Auto-ghost error: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +54,7 @@ class SummarizeRequest(BaseModel):
 def root():
     return {"status": "running"}
 
+# AI Job Description Summarization Endpoint
 @app.post("/summarize")
 async def summarize(req: SummarizeRequest):
     prompt = fprompt = f"""Summarize this job description in 2 sentences max. Be very brief and direct.
@@ -57,7 +81,8 @@ Job Description:
             return {"summary": f"Error: {result}"}
         summary = result["choices"][0]["message"]["content"]
         return {"summary": summary}
-    
+
+# Resume Upload and Parsing Endpoint
 @app.post("/upload-resume")
 async def upload_resume(file: UploadFile = File(...)):
     try:
@@ -85,7 +110,8 @@ async def upload_resume(file: UploadFile = File(...)):
         return {"text": text}
     except Exception as e:
         return {"error": str(e)}
-    
+ 
+# Resume Tailoring Endpoint   
 class TailorRequest(BaseModel):
     job_id: str
     job_desc: str
@@ -172,3 +198,23 @@ Job Description:
 
     except Exception as e:
         return {"error": str(e)}
+
+# Auto-Ghosting Endpoint - Marks old "Applied" applications as "Ghosted" 
+@app.post("/auto-ghost")
+async def auto_ghost():
+    try:
+        sb = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
+        
+        from datetime import datetime, timedelta
+        cutoff = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        
+        result = sb.table("applications")\
+            .update({ "apply_status": "Ghosted", "date_update": datetime.now().strftime('%Y-%m-%d') })\
+            .eq("apply_status", "Applied")\
+            .lt("date_apply", cutoff)\
+            .execute()
+        
+        updated = len(result.data)
+        return { "message": f"{updated} application(s) marked as Ghosted." }
+    except Exception as e:
+        return { "error": str(e) }
