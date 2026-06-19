@@ -1,8 +1,49 @@
 "use client";
 
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import { Job, ApplyStatus } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
 import AddJobModal from "@/components/AddJobModal";
+import EditJobModal from "@/components/EditJobModal";
+import StatusSelect from "./StatusSelect";
+
+const STATUS_OPTIONS = [
+  { value: "Applied", label: "Applied", style: "bg-blue-500/20 text-blue-400" },
+  {
+    value: "Interviewing",
+    label: "Interviewing",
+    style: "bg-amber-500/20 text-amber-400",
+  },
+  {
+    value: "Ghosted",
+    label: "Ghosted",
+    style: "bg-slate-500/20 text-slate-400",
+  },
+  {
+    value: "Rejected",
+    label: "Rejected",
+    style: "bg-rose-500/20 text-rose-400",
+  },
+];
+
+const CONTRACT_OPTIONS = [
+  {
+    value: "Full-time",
+    label: "Full-time",
+    style: "bg-violet-500/20 text-violet-400",
+  },
+  {
+    value: "Contractual",
+    label: "Contractual",
+    style: "bg-orange-500/20 text-orange-400",
+  },
+];
+
+const WORKPLACE_OPTIONS = [
+  { value: "On-site", label: "On-site", style: "bg-rose-500/20 text-rose-400" },
+  { value: "Hybrid", label: "Hybrid", style: "bg-green-500/20 text-green-400" },
+  { value: "Remote", label: "Remote", style: "bg-cyan-500/20 text-cyan-400" },
+];
 
 const statusStyles: Record<string, string> = {
   Applied: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
@@ -45,6 +86,7 @@ function Badge({
 function ExpandedRow({
   job,
   onTailored,
+  onUpdated,
 }: {
   job: Job;
   onTailored: (
@@ -52,6 +94,7 @@ function ExpandedRow({
     tailored_resume: string,
     cover_letter: string,
   ) => void;
+  onUpdated: (job: Job) => void;
 }) {
   const [tailoring, setTailoring] = useState(false);
   const [error, setError] = useState("");
@@ -193,6 +236,7 @@ function ExpandedRow({
                   ? "✨ Re-tailor Resume"
                   : "✨ Tailor Resume"}
             </button>
+            <EditJobModal job={job} onUpdated={onUpdated} />
           </div>
         </div>
       </td>
@@ -214,6 +258,10 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
         j.id === id ? { ...j, tailored_resume, cover_letter } : j,
       ),
     );
+  };
+
+  const handleUpdated = (updatedJob: Job) => {
+    setJobs(jobs.map((j) => (j.id === updatedJob.id ? updatedJob : j)));
   };
 
   const toggleRow = (id: string) => {
@@ -286,10 +334,44 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
                     {job.job_title}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge label={job.job_contract} styles={contractStyles} />
+                    <StatusSelect
+                      value={job.job_contract}
+                      options={CONTRACT_OPTIONS}
+                      onChange={async (val) => {
+                        await supabase
+                          .from("applications")
+                          .update({
+                            job_contract: val,
+                            date_update: new Date().toISOString().split("T")[0],
+                          })
+                          .eq("id", job.id);
+                        setJobs(
+                          jobs.map((j) =>
+                            j.id === job.id ? { ...j, job_contract: val } : j,
+                          ),
+                        );
+                      }}
+                    />
                   </td>
                   <td className="px-4 py-3">
-                    <Badge label={job.job_type} styles={workplaceStyles} />
+                    <StatusSelect
+                      value={job.job_type}
+                      options={WORKPLACE_OPTIONS}
+                      onChange={async (val) => {
+                        await supabase
+                          .from("applications")
+                          .update({
+                            job_type: val,
+                            date_update: new Date().toISOString().split("T")[0],
+                          })
+                          .eq("id", job.id);
+                        setJobs(
+                          jobs.map((j) =>
+                            j.id === job.id ? { ...j, job_type: val } : j,
+                          ),
+                        );
+                      }}
+                    />
                   </td>
                   <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
                     {new Date(job.date_apply).toLocaleDateString("en-GB", {
@@ -299,16 +381,49 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
                     })}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge label={job.apply_status} styles={statusStyles} />
+                    <StatusSelect
+                      value={job.apply_status}
+                      options={STATUS_OPTIONS}
+                      onChange={async (val) => {
+                        const status = val as ApplyStatus;
+                        await supabase
+                          .from("applications")
+                          .update({
+                            apply_status: status,
+                            date_update: new Date().toISOString().split("T")[0],
+                          })
+                          .eq("id", job.id);
+                        setJobs(
+                          jobs.map((j) =>
+                            j.id === job.id
+                              ? { ...j, apply_status: status }
+                              : j,
+                          ),
+                        );
+                      }}
+                    />
                   </td>
-                  <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
-                    {job.date_update
-                      ? new Date(job.date_update).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
+                  <td
+                    className="px-4 py-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="date"
+                      value={job.date_update ?? ""}
+                      onChange={async (e) => {
+                        const val = e.target.value;
+                        await supabase
+                          .from("applications")
+                          .update({ date_update: val })
+                          .eq("id", job.id);
+                        setJobs(
+                          jobs.map((j) =>
+                            j.id === job.id ? { ...j, date_update: val } : j,
+                          ),
+                        );
+                      }}
+                      className="bg-transparent text-slate-400 text-xs outline-none cursor-pointer"
+                    />
                   </td>
                   <td className="px-4 py-3 text-slate-500 text-xs">
                     {expandedId === job.id ? "▲" : "▼"}
@@ -319,6 +434,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
                     key={`${job.id}-expanded`}
                     job={job}
                     onTailored={handleTailored}
+                    onUpdated={handleUpdated}
                   />
                 )}
               </React.Fragment>
