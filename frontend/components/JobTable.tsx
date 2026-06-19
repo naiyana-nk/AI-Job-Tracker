@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Job, ApplyStatus } from "@/lib/types";
+import AddJobModal from "@/components/AddJobModal";
 
 const statusStyles: Record<string, string> = {
   Applied: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
@@ -49,9 +50,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
       {/* Header */}
       <div className="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-800">
         <p className="text-slate-400 text-sm">{jobs.length} applications</p>
-        <button className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          + Add Application
-        </button>
+        <AddJobModal onJobAdded={(job) => setJobs([job, ...jobs])} />
       </div>
 
       {/* Table */}
