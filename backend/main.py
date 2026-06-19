@@ -1,9 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
+import PyPDF2
+import io
 import os
 from dotenv import load_dotenv
+from supabase import create_client
 
 load_dotenv()
 
@@ -54,3 +57,116 @@ Job Description:
             return {"summary": f"Error: {result}"}
         summary = result["choices"][0]["message"]["content"]
         return {"summary": summary}
+    
+@app.post("/upload-resume")
+async def upload_resume(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(contents))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+
+        if not text.strip():
+            return {"error": "Could not extract text from PDF. Make sure it's not a scanned image."}
+
+        from supabase import create_client
+        sb = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
+        
+        # Check if resume already exists
+        existing = sb.table("resume").select("id").execute()
+        if existing.data:
+            sb.table("resume").update({"raw_text": text, "updated_at": "now()"}).eq("id", existing.data[0]["id"]).execute()
+        else:
+            sb.table("resume").insert({"raw_text": text}).execute()
+
+        return {"text": text}
+    except Exception as e:
+        return {"error": str(e)}
+    
+class TailorRequest(BaseModel):
+    job_id: str
+    job_desc: str
+    job_title: str
+    company_name: str
+
+@app.post("/tailor")
+async def tailor_resume(req: TailorRequest):
+    try:
+        sb = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
+        
+        # Get base resume
+        resume = sb.table("resume").select("raw_text").execute()
+        if not resume.data:
+            return {"error": "No base resume found. Please upload your resume first."}
+        
+        resume_text = resume.data[0]["raw_text"]
+
+        # Tailor resume prompt
+        tailor_prompt = f"""You are an expert resume writer. 
+Here is my master resume and a target job description.
+Rewrite my experience bullet points to naturally include the keywords from this job description.
+Do not invent any new experience. Keep it honest and natural.
+Output only the rewritten bullet points in clean markdown.
+
+Master Resume:
+{resume_text}
+
+Job Title: {req.job_title}
+Company: {req.company_name}
+Job Description:
+{req.job_desc}"""
+
+        # Cover letter prompt
+        cover_prompt = f"""Write a concise, professional cover letter for this job application.
+Use the resume details provided. Keep it to 3 short paragraphs. Do not invent fake experience.
+
+Resume:
+{resume_text}
+
+Job Title: {req.job_title}
+Company: {req.company_name}
+Job Description:
+{req.job_desc}"""
+
+        async with httpx.AsyncClient() as client:
+            # Run both requests
+            tailor_res = await client.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": MODEL,
+                    "messages": [{"role": "user", "content": tailor_prompt}],
+                },
+                timeout=60,
+            )
+            cover_res = await client.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": MODEL,
+                    "messages": [{"role": "user", "content": cover_prompt}],
+                },
+                timeout=60,
+            )
+
+        tailored_resume = tailor_res.json()["choices"][0]["message"]["content"]
+        cover_letter = cover_res.json()["choices"][0]["message"]["content"]
+
+        # Save to Supabase
+        sb.table("applications").update({
+            "tailored_resume": tailored_resume,
+            "cover_letter": cover_letter,
+            "date_update": "now()"
+        }).eq("id", req.job_id).execute()
+
+        return {"tailored_resume": tailored_resume, "cover_letter": cover_letter}
+
+    except Exception as e:
+        return {"error": str(e)}
