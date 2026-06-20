@@ -146,3 +146,7 @@
 .animate-slideUp {
   animation: slideUp 0.3s ease-out;
 }
+
+/* input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+} */

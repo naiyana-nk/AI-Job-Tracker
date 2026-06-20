@@ -275,7 +275,46 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
     );
 
   const [jobs, setJobs] = useState<Job[]>(sortJobs(initialJobs));
+
+  type SortKey =
+    | "company_name"
+    | "job_title"
+    | "job_contract"
+    | "job_type"
+    | "date_apply"
+    | "apply_status"
+    | "date_update";
+
+  const [sortKey, setSortKey] = useState<SortKey>("date_apply");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+    setPage(1);
+  };
+
+  const sortedJobs = [...jobs].sort((a, b) => {
+    const aVal = a[sortKey] ?? "";
+    const bVal = b[sortKey] ?? "";
+    const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+    return sortDir === "asc" ? result : -result;
+  });
+
+  const totalPages = Math.ceil(sortedJobs.length / pageSize);
+  const paginatedJobs = sortedJobs.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
 
   const handleTailored = (
     id: string,
@@ -317,28 +356,30 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-indigo-950/80 border-b border-indigo-900/50">
-              <th className="text-left text-indigo-300 font-semibold px-4 py-3">
-                Company
-              </th>
-              <th className="text-left text-indigo-300 font-semibold px-4 py-3">
-                Position
-              </th>
-              <th className="text-left text-indigo-300 font-semibold px-4 py-3">
-                Type
-              </th>
-              <th className="text-left text-indigo-300 font-semibold px-4 py-3">
-                Workplace
-              </th>
-              <th className="text-left text-indigo-300 font-semibold px-4 py-3">
-                Date Applied
-              </th>
-              <th className="text-left text-indigo-300 font-semibold px-4 py-3">
-                Status
-              </th>
-              <th className="text-left text-indigo-300 font-semibold px-4 py-3">
-                Date Update
-              </th>
-              <th className="text-left text-indigo-300 font-semibold px-4 py-3"></th>
+              {[
+                { label: "Company", key: "company_name" },
+                { label: "Position", key: "job_title" },
+                { label: "Type", key: "job_contract" },
+                { label: "Workplace", key: "job_type" },
+                { label: "Date Applied", key: "date_apply" },
+                { label: "Status", key: "apply_status" },
+                { label: "Date Update", key: "date_update" },
+              ].map((col) => (
+                <th
+                  key={col.key}
+                  onClick={() => handleSort(col.key as SortKey)}
+                  className="text-left text-indigo-300 font-semibold px-4 py-3 cursor-pointer hover:text-white transition-colors whitespace-nowrap select-none"
+                >
+                  {col.label}
+                  <span className="ml-1 text-xs opacity-50">
+                    {sortKey === col.key
+                      ? sortDir === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
+                  </span>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -349,7 +390,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
                 </td>
               </tr>
             )}
-            {jobs.map((job, i) => (
+            {paginatedJobs.map((job, i) => (
               <React.Fragment key={job.id}>
                 <tr
                   key={job.id}
@@ -461,9 +502,6 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
                       className="bg-transparent text-slate-400 text-xs outline-none cursor-pointer"
                     />
                   </td>
-                  <td className="px-4 py-3 text-slate-500 text-xs">
-                    {expandedId === job.id ? "▲" : "▼"}
-                  </td>
                 </tr>
                 {expandedId === job.id && (
                   <ExpandedRow
@@ -478,6 +516,46 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
             ))}
           </tbody>
         </table>
+      </div>
+      {/* Pagination */}
+      <div className="bg-slate-900 border-t border-slate-800 px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 text-xs">Rows per page:</span>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+            className="bg-slate-800 border border-slate-700 text-white text-xs rounded-lg px-2 py-1 outline-none"
+          >
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
+        <span className="text-slate-400 text-xs">
+          Page {page} of {totalPages === 0 ? 1 : totalPages} —{" "}
+          {sortedJobs.length} total
+        </span>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage(page - 1)}
+            disabled={page === 1}
+            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
+          >
+            ← Prev
+          </button>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Next →
+          </button>
+        </div>
       </div>
     </div>
   );
