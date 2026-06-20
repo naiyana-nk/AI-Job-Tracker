@@ -343,218 +343,270 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
     setExpandedId(expandedId === id ? null : id);
   };
 
+  const stats = [
+    { label: "Total", count: jobs.length, color: "text-white" },
+    {
+      label: "Applied",
+      count: jobs.filter((j) => j.apply_status === "Applied").length,
+      color: "text-blue-400",
+    },
+    {
+      label: "Interviewing",
+      count: jobs.filter((j) => j.apply_status === "Interviewing").length,
+      color: "text-amber-400",
+    },
+    {
+      label: "Ghosted",
+      count: jobs.filter((j) => j.apply_status === "Ghosted").length,
+      color: "text-slate-400",
+    },
+    {
+      label: "Rejected",
+      count: jobs.filter((j) => j.apply_status === "Rejected").length,
+      color: "text-rose-400",
+    },
+  ];
+
   return (
-    <div className="rounded-xl border border-slate-800 overflow-hidden">
-      {/* Header */}
-      <div className="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-800">
-        <p className="text-slate-400 text-sm">{jobs.length} applications</p>
-        <AddJobModal onJobAdded={(job) => setJobs(sortJobs([job, ...jobs]))} />
+    <div className="flex flex-col gap-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex flex-col gap-1"
+          >
+            <span className="text-slate-500 text-xs font-medium uppercase tracking-wide">
+              {stat.label}
+            </span>
+            <span className={`text-2xl font-bold ${stat.color}`}>
+              {stat.count}
+            </span>
+          </div>
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-indigo-950/80 border-b border-indigo-900/50">
-              {[
-                { label: "Company", key: "company_name" },
-                { label: "Position", key: "job_title" },
-                { label: "Type", key: "job_contract" },
-                { label: "Workplace", key: "job_type" },
-                { label: "Date Applied", key: "date_apply" },
-                { label: "Status", key: "apply_status" },
-                { label: "Date Update", key: "date_update" },
-              ].map((col) => (
-                <th
-                  key={col.key}
-                  onClick={() => handleSort(col.key as SortKey)}
-                  className="text-left text-indigo-300 font-semibold px-4 py-3 cursor-pointer hover:text-white transition-colors whitespace-nowrap select-none"
-                >
-                  {col.label}
-                  <span className="ml-1 text-xs opacity-50">
-                    {sortKey === col.key
-                      ? sortDir === "asc"
-                        ? "▲"
-                        : "▼"
-                      : "⇅"}
-                  </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {jobs.length === 0 && (
-              <tr>
-                <td colSpan={8} className="text-center text-slate-500 py-16">
-                  No applications yet. Add your first one!
-                </td>
-              </tr>
-            )}
-            {paginatedJobs.map((job, i) => (
-              <React.Fragment key={job.id}>
-                <tr
-                  key={job.id}
-                  onClick={() => toggleRow(job.id)}
-                  className={`border-b border-slate-800/50 hover:bg-slate-800/50 transition-colors cursor-pointer ${
-                    job.apply_status === "Ghosted" ||
-                    job.apply_status === "Rejected"
-                      ? "bg-slate-900/20 opacity-50"
-                      : i % 2 === 0
-                        ? "bg-slate-800/60"
-                        : "bg-slate-800/90"
-                  }`}
-                >
-                  <td className="px-4 py-3 text-white font-medium whitespace-nowrap">
-                    {job.company_name}
-                  </td>
-                  <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
-                    {job.job_title}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusSelect
-                      value={job.job_contract}
-                      options={CONTRACT_OPTIONS}
-                      onChange={async (val) => {
-                        await supabase
-                          .from("applications")
-                          .update({
-                            job_contract: val,
-                            date_update: new Date().toISOString().split("T")[0],
-                          })
-                          .eq("id", job.id);
-                        setJobs(
-                          jobs.map((j) =>
-                            j.id === job.id ? { ...j, job_contract: val } : j,
-                          ),
-                        );
-                      }}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusSelect
-                      value={job.job_type}
-                      options={WORKPLACE_OPTIONS}
-                      onChange={async (val) => {
-                        await supabase
-                          .from("applications")
-                          .update({
-                            job_type: val,
-                            date_update: new Date().toISOString().split("T")[0],
-                          })
-                          .eq("id", job.id);
-                        setJobs(
-                          jobs.map((j) =>
-                            j.id === job.id ? { ...j, job_type: val } : j,
-                          ),
-                        );
-                      }}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
-                    {new Date(job.date_apply).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusSelect
-                      value={job.apply_status}
-                      options={STATUS_OPTIONS}
-                      onChange={async (val) => {
-                        const status = val as ApplyStatus;
-                        await supabase
-                          .from("applications")
-                          .update({
-                            apply_status: status,
-                            date_update: new Date().toISOString().split("T")[0],
-                          })
-                          .eq("id", job.id);
-                        setJobs(
-                          jobs.map((j) =>
-                            j.id === job.id
-                              ? { ...j, apply_status: status }
-                              : j,
-                          ),
-                        );
-                      }}
-                    />
-                  </td>
-                  <td
-                    className="px-4 py-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="date"
-                      value={job.date_update ?? ""}
-                      onChange={async (e) => {
-                        const val = e.target.value;
-                        await supabase
-                          .from("applications")
-                          .update({ date_update: val })
-                          .eq("id", job.id);
-                        setJobs(
-                          jobs.map((j) =>
-                            j.id === job.id ? { ...j, date_update: val } : j,
-                          ),
-                        );
-                      }}
-                      className="bg-transparent text-slate-400 text-xs outline-none cursor-pointer"
-                    />
-                  </td>
-                </tr>
-                {expandedId === job.id && (
-                  <ExpandedRow
-                    key={`${job.id}-expanded`}
-                    job={job}
-                    onTailored={handleTailored}
-                    onUpdated={handleUpdated}
-                    onDeleted={handleDeleted}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {/* Pagination */}
-      <div className="bg-slate-900 border-t border-slate-800 px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-slate-400 text-xs">Rows per page:</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setPage(1);
-            }}
-            className="bg-slate-800 border border-slate-700 text-white text-xs rounded-lg px-2 py-1 outline-none"
-          >
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+      <div className="rounded-xl border border-slate-800 overflow-hidden">
+        {/* Header */}
+        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-800">
+          <p className="text-slate-400 text-sm">{jobs.length} applications</p>
+          <AddJobModal
+            onJobAdded={(job) => setJobs(sortJobs([job, ...jobs]))}
+          />
         </div>
 
-        <span className="text-slate-400 text-xs">
-          Page {page} of {totalPages === 0 ? 1 : totalPages} —{" "}
-          {sortedJobs.length} total
-        </span>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-indigo-950/80 border-b border-indigo-900/50">
+                {[
+                  { label: "Company", key: "company_name" },
+                  { label: "Position", key: "job_title" },
+                  { label: "Type", key: "job_contract" },
+                  { label: "Workplace", key: "job_type" },
+                  { label: "Date Applied", key: "date_apply" },
+                  { label: "Status", key: "apply_status" },
+                  { label: "Date Update", key: "date_update" },
+                ].map((col) => (
+                  <th
+                    key={col.key}
+                    onClick={() => handleSort(col.key as SortKey)}
+                    className="text-left text-indigo-300 font-semibold px-4 py-3 cursor-pointer hover:text-white transition-colors whitespace-nowrap select-none"
+                  >
+                    {col.label}
+                    <span className="ml-1 text-xs opacity-50">
+                      {sortKey === col.key
+                        ? sortDir === "asc"
+                          ? "▲"
+                          : "▼"
+                        : "⇅"}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="text-center text-slate-500 py-16">
+                    No applications yet. Add your first one!
+                  </td>
+                </tr>
+              )}
+              {paginatedJobs.map((job, i) => (
+                <React.Fragment key={job.id}>
+                  <tr
+                    key={job.id}
+                    onClick={() => toggleRow(job.id)}
+                    className={`border-b border-slate-800/50 hover:bg-slate-800/50 transition-colors cursor-pointer ${
+                      job.apply_status === "Ghosted" ||
+                      job.apply_status === "Rejected"
+                        ? "bg-slate-900/20 opacity-50"
+                        : i % 2 === 0
+                          ? "bg-slate-800/60"
+                          : "bg-slate-800/90"
+                    }`}
+                  >
+                    <td className="px-4 py-3 text-white font-medium whitespace-nowrap">
+                      {job.company_name}
+                    </td>
+                    <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                      {job.job_title}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusSelect
+                        value={job.job_contract}
+                        options={CONTRACT_OPTIONS}
+                        onChange={async (val) => {
+                          await supabase
+                            .from("applications")
+                            .update({
+                              job_contract: val,
+                              date_update: new Date()
+                                .toISOString()
+                                .split("T")[0],
+                            })
+                            .eq("id", job.id);
+                          setJobs(
+                            jobs.map((j) =>
+                              j.id === job.id ? { ...j, job_contract: val } : j,
+                            ),
+                          );
+                        }}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusSelect
+                        value={job.job_type}
+                        options={WORKPLACE_OPTIONS}
+                        onChange={async (val) => {
+                          await supabase
+                            .from("applications")
+                            .update({
+                              job_type: val,
+                              date_update: new Date()
+                                .toISOString()
+                                .split("T")[0],
+                            })
+                            .eq("id", job.id);
+                          setJobs(
+                            jobs.map((j) =>
+                              j.id === job.id ? { ...j, job_type: val } : j,
+                            ),
+                          );
+                        }}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
+                      {new Date(job.date_apply).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusSelect
+                        value={job.apply_status}
+                        options={STATUS_OPTIONS}
+                        onChange={async (val) => {
+                          const status = val as ApplyStatus;
+                          await supabase
+                            .from("applications")
+                            .update({
+                              apply_status: status,
+                              date_update: new Date()
+                                .toISOString()
+                                .split("T")[0],
+                            })
+                            .eq("id", job.id);
+                          setJobs(
+                            jobs.map((j) =>
+                              j.id === job.id
+                                ? { ...j, apply_status: status }
+                                : j,
+                            ),
+                          );
+                        }}
+                      />
+                    </td>
+                    <td
+                      className="px-4 py-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="date"
+                        value={job.date_update ?? ""}
+                        onChange={async (e) => {
+                          const val = e.target.value;
+                          await supabase
+                            .from("applications")
+                            .update({ date_update: val })
+                            .eq("id", job.id);
+                          setJobs(
+                            jobs.map((j) =>
+                              j.id === job.id ? { ...j, date_update: val } : j,
+                            ),
+                          );
+                        }}
+                        className="bg-transparent text-slate-400 text-xs outline-none cursor-pointer"
+                      />
+                    </td>
+                  </tr>
+                  {expandedId === job.id && (
+                    <ExpandedRow
+                      key={`${job.id}-expanded`}
+                      job={job}
+                      onTailored={handleTailored}
+                      onUpdated={handleUpdated}
+                      onDeleted={handleDeleted}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPage(page - 1)}
-            disabled={page === 1}
-            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
-          >
-            ← Prev
-          </button>
-          <button
-            onClick={() => setPage(page + 1)}
-            disabled={page >= totalPages}
-            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Next →
-          </button>
+        {/* Pagination */}
+        <div className="bg-slate-900 border-t border-slate-800 px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 text-xs">Rows per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className="bg-slate-800 border border-slate-700 text-white text-xs rounded-lg px-2 py-1 outline-none"
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          <span className="text-slate-400 text-xs">
+            Page {page} of {totalPages === 0 ? 1 : totalPages} —{" "}
+            {sortedJobs.length} total
+          </span>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+              className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
+            >
+              ← Prev
+            </button>
+            <button
+              onClick={() => setPage(page + 1)}
+              disabled={page >= totalPages}
+              className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       </div>
     </div>
