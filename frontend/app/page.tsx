@@ -8,7 +8,7 @@ export default async function Home() {
     .from("applications")
     .select("*")
     .order("date_apply", { ascending: false });
-  console.log("jobs fetched:", data, "error:", error);
+  // console.log("jobs fetched:", data, "error:", error);
 
   if (error) {
     console.error(error);

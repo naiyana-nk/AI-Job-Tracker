@@ -3,6 +3,6 @@ uvicorn
 python-dotenv
 supabase
 httpx
-PyPDF2
+pdfplumber
 python-multipart
 apscheduler

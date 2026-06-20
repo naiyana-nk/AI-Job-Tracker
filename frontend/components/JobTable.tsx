@@ -268,7 +268,13 @@ function ExpandedRow({
 }
 
 export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
-  const [jobs, setJobs] = useState<Job[]>(initialJobs);
+  const sortJobs = (list: Job[]) =>
+    [...list].sort(
+      (a, b) =>
+        new Date(b.date_apply).getTime() - new Date(a.date_apply).getTime(),
+    );
+
+  const [jobs, setJobs] = useState<Job[]>(sortJobs(initialJobs));
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleTailored = (
@@ -284,7 +290,9 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
   };
 
   const handleUpdated = (updatedJob: Job) => {
-    setJobs(jobs.map((j) => (j.id === updatedJob.id ? updatedJob : j)));
+    setJobs(
+      sortJobs(jobs.map((j) => (j.id === updatedJob.id ? updatedJob : j))),
+    );
   };
 
   const handleDeleted = (id: string) => {
@@ -301,7 +309,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
       {/* Header */}
       <div className="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-800">
         <p className="text-slate-400 text-sm">{jobs.length} applications</p>
-        <AddJobModal onJobAdded={(job) => setJobs([job, ...jobs])} />
+        <AddJobModal onJobAdded={(job) => setJobs(sortJobs([job, ...jobs]))} />
       </div>
 
       {/* Table */}

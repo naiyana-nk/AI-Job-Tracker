@@ -21,6 +21,7 @@ scheduler = AsyncIOScheduler()
 async def start_scheduler():
     scheduler.add_job(run_auto_ghost, 'interval', hours=24)
     scheduler.start()
+    await run_auto_ghost()
 
 async def run_auto_ghost():
     try:
