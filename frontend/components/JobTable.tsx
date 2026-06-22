@@ -103,6 +103,7 @@ function ExpandedRow({
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"resume" | "cover">("resume");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const handleTailor = async () => {
     if (!job.job_desc) {
@@ -169,66 +170,16 @@ function ExpandedRow({
           </div>
         </div>
 
-        {/* AI Output */}
-        {(job.tailored_resume || job.cover_letter) && (
-          <div className="mt-4 pt-4 border-t border-slate-700/50 flex flex-col gap-3">
-            {/* Tabs */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setActiveTab("resume")}
-                className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                  activeTab === "resume"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-700 text-slate-400 hover:text-white"
-                }`}
-              >
-                Tailored Resume
-              </button>
-              <button
-                onClick={() => setActiveTab("cover")}
-                className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                  activeTab === "cover"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-700 text-slate-400 hover:text-white"
-                }`}
-              >
-                Cover Letter
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 max-h-64 overflow-y-auto">
-              <pre className="text-slate-300 text-xs whitespace-pre-wrap font-mono leading-relaxed">
-                {activeTab === "resume"
-                  ? job.tailored_resume
-                  : job.cover_letter}
-              </pre>
-            </div>
-
-            {/* Copy button */}
-            <button
-              onClick={() =>
-                navigator.clipboard.writeText(
-                  activeTab === "resume"
-                    ? (job.tailored_resume ?? "")
-                    : (job.cover_letter ?? ""),
-                )
-              }
-              className="self-start text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              📋 Copy to Clipboard
-            </button>
-          </div>
-        )}
-
         {/* AI Tools */}
-        <div className="mt-4 pt-4 border-t border-slate-700/50 flex flex-col gap-2">
+        <div className="mt-4 pt-4 border-t border-slate-700/50 flex flex-col gap-3">
           {error && (
             <p className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
-          <div className="flex gap-3">
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 flex-wrap">
             <button
               onClick={handleTailor}
               disabled={tailoring}
@@ -240,6 +191,20 @@ function ExpandedRow({
                   ? "✨ Re-tailor Resume"
                   : "✨ Tailor Resume"}
             </button>
+            {(job.tailored_resume || job.cover_letter) && (
+              <button
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    activeTab === "resume"
+                      ? (job.tailored_resume ?? "")
+                      : (job.cover_letter ?? ""),
+                  )
+                }
+                className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                📋 Copy
+              </button>
+            )}
             <EditJobModal job={job} onUpdated={onUpdated} />
             <button
               onClick={() => setConfirmOpen(true)}
@@ -247,7 +212,6 @@ function ExpandedRow({
             >
               🗑️ Delete
             </button>
-
             <ConfirmModal
               open={confirmOpen}
               title="Delete Application"
@@ -261,6 +225,56 @@ function ExpandedRow({
               }}
             />
           </div>
+
+          {/* AI Output Accordion */}
+          {(job.tailored_resume || job.cover_letter) && (
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setAiOpen(!aiOpen)}
+                className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors self-start"
+              >
+                <span>{aiOpen ? "▲" : "▼"}</span>
+                <span>AI Output</span>
+              </button>
+
+              {aiOpen && (
+                <div className="flex flex-col gap-2">
+                  {/* Tabs */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setActiveTab("resume")}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                        activeTab === "resume"
+                          ? "bg-indigo-600 text-white"
+                          : "bg-slate-700 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      Tailored Resume
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("cover")}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                        activeTab === "cover"
+                          ? "bg-indigo-600 text-white"
+                          : "bg-slate-700 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      Cover Letter
+                    </button>
+                  </div>
+
+                  {/* Content */}
+                  <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 max-h-64 overflow-y-auto">
+                    <pre className="text-slate-300 text-xs whitespace-pre-wrap font-mono leading-relaxed">
+                      {activeTab === "resume"
+                        ? job.tailored_resume
+                        : job.cover_letter}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </td>
     </tr>
