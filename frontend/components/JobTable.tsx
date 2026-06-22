@@ -118,7 +118,7 @@ function ExpandedRow({
       company_name: job.company_name,
     });
     try {
-      const res = await fetch("${process.env.NEXT_PUBLIC_API_URL}/tailor", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tailor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
