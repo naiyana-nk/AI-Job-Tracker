@@ -663,6 +663,11 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
             </select>
           </div>
 
+          <span className="text-slate-400 text-xs">
+            Page {page} of {totalPages === 0 ? 1 : totalPages} —{" "}
+            {filteredJobs.length} total
+          </span>
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage(page - 1)}
