@@ -34,7 +34,7 @@ export default function AddJobModal({ onJobAdded }: Props) {
     if (!form.job_desc.trim()) return
     setSummarizing(true)
     try {
-      const res = await fetch('http://localhost:8000/summarize', {
+      const res = await fetch('${process.env.NEXT_PUBLIC_API_URL}/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: form.job_desc }),
