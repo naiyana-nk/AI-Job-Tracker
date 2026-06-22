@@ -150,3 +150,11 @@
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
+
+select {
+  cursor: pointer;
+}
+
+input[type="date"] {
+  cursor: pointer;
+}

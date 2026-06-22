@@ -10,6 +10,7 @@ import ConfirmModal from "./ConfirmModal";
 
 const STATUS_OPTIONS = [
   { value: "Applied", label: "Applied", style: "bg-blue-500/20 text-blue-400" },
+  { value: "Replied", label: "Replied", style: "bg-cyan-500/20 text-cyan-400" },
   {
     value: "Interviewing",
     label: "Interviewing",
@@ -48,6 +49,7 @@ const WORKPLACE_OPTIONS = [
 
 const statusStyles: Record<string, string> = {
   Applied: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+  Replied: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20",
   Interviewing: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
   Ghosted: "bg-slate-500/10 text-slate-400 border border-slate-500/20",
   Rejected: "bg-rose-500/10 text-rose-400 border border-rose-500/20",
@@ -104,7 +106,7 @@ function ExpandedRow({
   const [activeTab, setActiveTab] = useState<"resume" | "cover">("resume");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   const handleTailor = async () => {
     if (!job.job_desc) {
@@ -150,14 +152,32 @@ function ExpandedRow({
         className="bg-slate-800/80 border-b border-slate-700 px-6 py-5"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Address */}
-          <div className="flex flex-col gap-1">
-            <span className="text-slate-500 text-xs font-medium uppercase tracking-wide">
-              Address
-            </span>
-            <span className="text-slate-200 text-sm">
-              {job.company_address || "—"}
-            </span>
+          {/* Company & Position */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-slate-500 text-xs font-medium uppercase tracking-wide">
+                Company
+              </span>
+              <span className="text-slate-200 text-sm">
+                {job.company_name || "—"}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-slate-500 text-xs font-medium uppercase tracking-wide">
+                Position
+              </span>
+              <span className="text-slate-200 text-sm">
+                {job.job_title || "—"}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-slate-500 text-xs font-medium uppercase tracking-wide">
+                Address
+              </span>
+              <span className="text-slate-200 text-sm">
+                {job.company_address || "—"}
+              </span>
+            </div>
           </div>
 
           {/* Job Description */}
@@ -386,6 +406,11 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
       color: "text-blue-400",
     },
     {
+      label: "Replied",
+      count: jobs.filter((j) => j.apply_status === "Replied").length,
+      color: "text-cyan-400",
+    },
+    {
       label: "Interviewing",
       count: jobs.filter((j) => j.apply_status === "Interviewing").length,
       color: "text-amber-400",
@@ -403,7 +428,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-20 md:pb-0">
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {stats.map((stat) => (
@@ -441,7 +466,8 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto md:overflow-x-hidden">
+          {" "}
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-indigo-950/80 border-b border-indigo-900/50">
@@ -493,10 +519,16 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
                           : "bg-slate-800/90"
                     }`}
                   >
-                    <td className="px-4 py-3 text-white font-medium whitespace-nowrap">
+                    <td
+                      className="px-4 py-3 text-white font-medium max-w-[150px] truncate"
+                      title={job.company_name}
+                    >
                       {job.company_name}
                     </td>
-                    <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                    <td
+                      className="px-4 py-3 text-slate-300 max-w-[150px] truncate"
+                      title={job.job_title}
+                    >
                       {job.job_title}
                     </td>
                     <td className="px-4 py-3">
@@ -630,12 +662,6 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
               <option value={100}>100</option>
             </select>
           </div>
-
-          <span className="text-slate-400 text-xs">
-            Page {page} of {totalPages === 0 ? 1 : totalPages} —{" "}
-            {filteredJobs.length} total
-            {sortedJobs.length} total
-          </span>
 
           <div className="flex items-center gap-2">
             <button

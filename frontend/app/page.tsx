@@ -25,7 +25,7 @@ export default async function Home() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 flex flex-col gap-0">
           <div>
-            <h1 className="text-3xl font-bold text-white">Job Tracker</h1>
+            <h1 className="text-3xl font-bold text-white mt-5">Job Tracker</h1>
             <p className="text-slate-400 mt-1 mb-2 text-sm">
               Track and tailor your job applications
             </p>

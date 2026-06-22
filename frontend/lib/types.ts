@@ -1,4 +1,4 @@
-export type ApplyStatus = 'Applied' | 'Interviewing' | 'Ghosted' | 'Rejected' | 'Offer'
+export type ApplyStatus = 'Applied' | 'Replied' | 'Interviewing' | 'Ghosted' | 'Rejected' | 'Offer'
 
 export type Job = {
   id: string

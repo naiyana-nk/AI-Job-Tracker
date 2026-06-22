@@ -164,22 +164,8 @@ export default function AddJobModal({ onJobAdded }: Props) {
             />
           </div>
 
-          {/* Status & Date */}
+          {/* Date */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-slate-300 text-xs font-medium">Status</label>
-              <select
-                name="apply_status"
-                value={form.apply_status}
-                onChange={handleChange}
-                className="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
-              >
-                <option>Applied</option>
-                <option>Interviewing</option>
-                <option>Ghosted</option>
-                <option>Rejected</option>
-              </select>
-            </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-slate-300 text-xs font-medium">Date Applied</label>
               <input
