@@ -290,6 +290,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+  const [search, setSearch] = useState("");
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -310,8 +311,17 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
     return sortDir === "asc" ? result : -result;
   });
 
-  const totalPages = Math.ceil(sortedJobs.length / pageSize);
-  const paginatedJobs = sortedJobs.slice(
+  const filteredJobs = sortedJobs.filter(
+    (j) =>
+      j.company_name?.toLowerCase().includes(search.toLowerCase()) ||
+      j.job_title?.toLowerCase().includes(search.toLowerCase()) ||
+      j.job_type?.toLowerCase().includes(search.toLowerCase()) ||
+      j.job_contract?.toLowerCase().includes(search.toLowerCase()) ||
+      j.apply_status?.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const totalPages = Math.ceil(filteredJobs.length / pageSize);
+  const paginatedJobs = filteredJobs.slice(
     (page - 1) * pageSize,
     page * pageSize,
   );
@@ -388,8 +398,18 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
 
       <div className="rounded-xl border border-slate-800 overflow-hidden">
         {/* Header */}
-        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-800">
+        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between gap-4 border-b border-slate-800 flex-wrap">
           <p className="text-slate-400 text-sm">{jobs.length} applications</p>
+          <input
+            type="text"
+            placeholder="Search company, position, status..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-500 w-72"
+          />
           <AddJobModal
             onJobAdded={(job) => setJobs(sortJobs([job, ...jobs]))}
           />
@@ -588,6 +608,7 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
 
           <span className="text-slate-400 text-xs">
             Page {page} of {totalPages === 0 ? 1 : totalPages} —{" "}
+            {filteredJobs.length} total
             {sortedJobs.length} total
           </span>
 
