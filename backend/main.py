@@ -219,3 +219,47 @@ async def auto_ghost():
         return { "message": f"{updated} application(s) marked as Ghosted." }
     except Exception as e:
         return { "error": str(e) }
+
+# Chatbot Endpoint
+class ChatRequest(BaseModel):
+    message: str
+    history: list[dict]
+    job_context: str = ""
+
+@app.post("/chat")
+async def chat(req: ChatRequest):
+    try:
+        sb = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
+        resume = sb.table("resume").select("raw_text").execute()
+        resume_text = resume.data[0]["raw_text"] if resume.data else "No resume uploaded yet."
+        
+        messages = req.history + [{"role": "user", "content": req.message}]
+        
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": MODEL,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": f"""You are a helpful job application assistant. You give advice on resumes, cover letters, interview preparation, and job searching. Keep responses concise and practical.
+                                        You have access to the user's job application data: {req.job_context}
+                                        You also have access to the user's base resume: {resume_text}
+                                        Use the job data to answer questions about their job search progress and insights.
+                                        Use the resume to give personalized advice on resume improvements, skills to highlight, and interview preparation."""
+
+                        }
+                    ] + messages,
+                },
+                timeout=30,
+            )
+            result = res.json()
+            reply = result["choices"][0]["message"]["content"]
+            return {"reply": reply}
+    except Exception as e:
+        return {"error": str(e)}

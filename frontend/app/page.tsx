@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { Job } from "@/lib/types";
 import JobTable from "@/components/JobTable";
 import ResumeModal from "@/components/ResumeModal";
+import ChatBot from "@/components/ChatBot";
 
 export default async function Home() {
   const { data, error } = await supabase
@@ -27,12 +28,11 @@ export default async function Home() {
               Track and tailor your job applications
             </p>
             <ResumeModal />
-
-            
           </div>
         </div>
         <JobTable initialJobs={jobs} />
       </div>
+      <ChatBot jobs={jobs} />
     </main>
   );
 }
