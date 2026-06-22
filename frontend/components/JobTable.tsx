@@ -104,6 +104,7 @@ function ExpandedRow({
   const [activeTab, setActiveTab] = useState<"resume" | "cover">("resume");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [copied, setCopied] = useState(false)
 
   const handleTailor = async () => {
     if (!job.job_desc) {
@@ -192,18 +193,28 @@ function ExpandedRow({
                   : "✨ Tailor Resume"}
             </button>
             {(job.tailored_resume || job.cover_letter) && (
-              <button
-                onClick={() =>
-                  navigator.clipboard.writeText(
-                    activeTab === "resume"
-                      ? (job.tailored_resume ?? "")
-                      : (job.cover_letter ?? ""),
-                  )
-                }
-                className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                📋 Copy
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      activeTab === "resume"
+                        ? (job.tailored_resume ?? "")
+                        : (job.cover_letter ?? ""),
+                    );
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {copied ? "✅ Copied!" : "📋 Copy"}
+                </button>
+                {copied && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-700 text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap">
+                    Copied to clipboard!
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-700" />
+                  </div>
+                )}
+              </div>
             )}
             <EditJobModal job={job} onUpdated={onUpdated} />
             <button
