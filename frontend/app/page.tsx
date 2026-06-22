@@ -1,3 +1,5 @@
+export const revalidate = 0
+
 import { supabase } from "@/lib/supabase";
 import { Job } from "@/lib/types";
 import JobTable from "@/components/JobTable";
