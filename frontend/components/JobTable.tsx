@@ -26,6 +26,7 @@ const STATUS_OPTIONS = [
     label: "Rejected",
     style: "bg-rose-500/20 text-rose-400",
   },
+  { value: "Offer", label: "Offer", style: "bg-green-500/20 text-green-400" },
 ];
 
 const CONTRACT_OPTIONS = [
@@ -416,14 +417,19 @@ export default function JobTable({ initialJobs }: { initialJobs: Job[] }) {
       color: "text-amber-400",
     },
     {
-      label: "Ghosted",
-      count: jobs.filter((j) => j.apply_status === "Ghosted").length,
-      color: "text-slate-400",
+      label: "Offer",
+      count: jobs.filter((j) => j.apply_status === "Offer").length,
+      color: "text-green-400",
     },
     {
       label: "Rejected",
       count: jobs.filter((j) => j.apply_status === "Rejected").length,
       color: "text-rose-400",
+    },
+    {
+      label: "Ghosted",
+      count: jobs.filter((j) => j.apply_status === "Ghosted").length,
+      color: "text-slate-400",
     },
   ];
 
