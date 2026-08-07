@@ -46,7 +46,7 @@ app.add_middleware(
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "openrouter/owl-alpha"
+MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
 class SummarizeRequest(BaseModel):
     text: str
